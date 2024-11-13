@@ -1,0 +1,32 @@
+﻿@namespace BlazorAgGrid.Grid
+@inject IJSRuntime JS
+
+@code {
+    [Parameter]
+    public required string Field { get; set; }
+
+    [Parameter]
+    public string? HeaderName { get; set; }
+
+    [Parameter]
+    public string? Width { get; set; }
+
+    [Parameter]
+    public bool Resizable { get; set; } = true;
+
+    [Parameter]
+    public bool Editable { get; set; }
+
+    [Parameter]
+    public ColumnFilter? Filter { get; set; }
+
+    [Parameter]
+    public bool Sortable { get; set; } = true;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await JS.InvokeVoidAsync("initGridColumns", Field, HeaderName, Width, Resizable, Editable, Filter?.ToString(), Sortable);
+
+        await base.OnAfterRenderAsync(firstRender);
+    }
+}

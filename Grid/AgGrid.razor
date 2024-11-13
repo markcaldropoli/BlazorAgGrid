@@ -1,0 +1,98 @@
+﻿@namespace BlazorAgGrid.Grid
+@inject IJSRuntime JS
+@typeparam DataType
+@implements IAsyncDisposable
+
+<head>
+    <!-- AG Grid -->
+    <script src="https://cdn.jsdelivr.net/npm/ag-grid-enterprise/dist/ag-grid-enterprise.min.noStyle.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-enterprise/styles/ag-grid.css" />
+
+    <!-- AG Grid Themes -->
+
+    <!-- Alpine -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-enterprise/styles/ag-theme-alpine.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-enterprise/styles/ag-theme-alpine-dark.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-enterprise/styles/ag-theme-alpine-auto-dark.css" />
+
+    <!-- Balham -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-enterprise/styles/ag-theme-balham.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-enterprise/styles/ag-theme-balham-dark.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-enterprise/styles/ag-theme-balham-auto-dark.css" />
+
+    <!-- Material -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-enterprise/styles/ag-theme-material.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-enterprise/styles/ag-theme-material-dark.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-enterprise/styles/ag-theme-material-auto-dark.css" />
+
+    <!-- Quartz -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-enterprise/styles/ag-theme-quartz.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-enterprise/styles/ag-theme-quartz-dark.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-enterprise/styles/ag-theme-quartz-auto-dark.css" />
+</head>
+
+@ChildContent
+<div id="myGrid" class="@Theme" style="height: @Height; width: @Width;" />
+
+@code {
+    [Parameter]
+    public required string Theme { get; set; }
+
+    [Parameter]
+    public required List<DataType> Data { get; set; }
+
+    [Parameter]
+    public required string Height { get; set; }
+
+    [Parameter]
+    public required string Width { get; set; }
+
+    [Parameter]
+    public bool Pageable { get; set; }
+
+    [Parameter]
+    public int PageSize { get; set; }
+
+    [Parameter]
+    public bool FullRowEdit { get; set; }
+
+    [Parameter]
+    public EventCallback<DataType> OnEdit { get; set; }
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    private DotNetObjectReference<AgGrid<DataType>>? _objReference;
+
+    protected override void OnInitialized()
+    {
+        _objReference = DotNetObjectReference.Create(this);
+
+        base.OnInitialized();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await base.OnAfterRenderAsync(firstRender);
+
+        var json = JsonSerializer.Serialize(Data);
+
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("initAgGridRowData", json, Pageable, PageSize, FullRowEdit, _objReference);
+        }
+    }
+
+    [JSInvokable]
+    public async Task Edited(string json)
+    {
+        var dataObject = JsonSerializer.Deserialize<DataType>(json);
+        await OnEdit.InvokeAsync(dataObject);
+    }
+
+    async ValueTask IAsyncDisposable.DisposeAsync()
+    {
+        await JS.InvokeVoidAsync("dispose");
+        _objReference?.Dispose();
+    }
+}
